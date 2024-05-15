@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="ru">
+	<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<meta name="author" content="//github.com/elderdub">
+		<meta name="description" content="Licensed under the GNU AGPL License 3.0 - //www.gnu.org/licenses/agpl.html">
+
+		<title>KT v0.01α</title>
+		<link rel="icon" href="./favicon.ico" type="image/x-icon">
+		<script>
+const cfg = {
+	speed: 4,
+	minDivs: 1,
+	maxDivs: 10,
+	chars: 'ктгожщыйд'.split('')
+}
+const transitions = {// seconds
+	topInitial: 20,
+	color: .15,
+	opacity: .5,
+	add: 60
+};
+
+const alternateChars = {
+	'q': 'й', 'w': 'ц', 'e': 'у', 'r': 'к', 't': 'е', 'y': 'н', 'u': 'г', 'i': 'ш', 'o': 'щ', 'p': 'з', '[': 'х', ']': 'ъ',
+	'a': 'ф', 's': 'ы', 'd': 'в', 'f': 'а', 'g': 'п', 'h': 'р', 'j': 'о', 'k': 'л', 'l': 'д', ';': 'ж', '\'': 'э',
+	'z': 'я', 'x': 'ч', 'c': 'с', 'v': 'м', 'b': 'и', 'n': 'т', 'm': 'ь', ',': 'б', '.': 'ю', '/': '.',
+	'й': 'q', 'ц': 'w', 'у': 'e', 'к': 'r', 'е': 't', 'н': 'y', 'г': 'u', 'ш': 'i', 'щ': 'o', 'з': 'p', 'х': '[', 'ъ': ']',
+	'ф': 'a', 'ы': 's', 'в': 'd', 'а': 'f', 'п': 'g', 'р': 'h', 'о': 'j', 'л': 'k', 'д': 'l', 'ж': ';', 'э': '\'',
+	'я': 'z', 'ч': 'x', 'с': 'c', 'м': 'v', 'и': 'b', 'т': 'n', 'ь': 'm', 'б': ',', 'ю': '.', '.': '/'
+};
+
+const head = document.head;
+const style = document.createElement('style');
+style.textContent = [
+	'html { height: 100% }',
+	'body { margin: 0; height: 100%; font: bold 24pt "Trebuchet MS", Tahoma, Generic'
+		+ '; background-color: #111; color: silver; position: relative; overflow-y: hidden }',
+	'body > form { margin: 0; width: 100%; height: 100%'
+		+ '; display: flex; align-items: center; justify-content: center; flex-direction: column; row-gap: .5em }',
+	//'body > form { width: 100%; height: 100%; display: table-cell; text-align: center; vertical-align: center }',
+	'body > form > div { font-weight: normal }',
+	'input, button { font-size: 24pt; padding: .5em }',
+	'input { color: black; background-color: silver; border: black 1px solid; border-radius: .5em }',
+	'body > div { position: absolute; top: -1em; height: 1em; background-color: #FFF2'
+		+ '; border-radius: .25em; padding: .25em; text-transform: capitalize; opacity: 1 }',
+	'body > div.fly { top: calc(100% - 1.5em) }',
+	'body > div.red { color: crimson; background-color: #F882; }',
+	'body > div.highlight { color: yellow !important }',
+	'body > div.hidden { opacity: 0 }',
+	'body > div:after { content: attr(data-key) }',
+	'body > div.shot { background-color: transparent; top: auto; bottom: -1em; transition: bottom 1.5s linear }',
+	'body > div.shot.hit { bottom: 100% }',
+	'body > div.shot:after { content: \'|\' }'
+].join('\n');
+document.head.appendChild(style);
+const body = document.createElement('body');
+document.documentElement.appendChild(body);
+document.documentElement.addEventListener('keydown', shot);
+config();
+
+function rand(min, max) {
+	return Math.round(Math.random() * (max - min) + min);
+}
+function add() {
+	if(!('divs' in window)) {
+		window.divs = cfg.minDivs - 1;
+	}
+	if(document.querySelectorAll('body > div').length < ++window.divs) {
+		transitions.top = transitions.topInitial;
+		Array.from(Array(20)).fill(null).forEach(function(val, i) {
+			if(i >= cfg.speed - 1) {
+				return;
+			}
+			transitions.top -= 1;
+		});
+		while(document.querySelectorAll('body > div').length < window.divs) {
+			fly();
+		}
+		if(window.divs < cfg.maxDivs) {
+			setTimeout(add, transitions.add * 1000);
+			++cfg.speed;
+		}
+	}
+}
+
+function fly() {
+	const randoms = {
+		transitionTop: rand(transitions.top, transitions.top * 1.5) * 1000
+	};
+	do {
+		randoms.left = rand(5, 95);
+	} while(document.querySelectorAll('body > [data-left="' + randoms.left + '"]').length);
+
+//console.log(randoms.transitionTop, transitions.top);
+
+	const div = document.createElement('div');
+	const key = cfg.chars[Math.floor(Math.random() * cfg.chars.length)];
+	div.dataset.key = key;
+	div.dataset.left = randoms.left;
+
+	div.style.cssText = 'left: ' + randoms.left
+		+ '%; transition: top ' + randoms.transitionTop + 'ms ease-out, color '
+		+ (transitions.color * 1000) + 'ms, background-color' + (transitions.color * 1000) + 'ms, opacity '
+		+ (transitions.opacity * 1000) + 'ms';
+	body.appendChild(div);
+	setTimeout(function(div) {
+		div.classList.add('fly');
+		setTimeout(function(div) {
+			if(div) {
+				div.classList.add('red');
+			}
+		}, randoms.transitionTop, div);
+	}, 100, div);
+}
+
+function shot(e) {
+	const isAltername = !(cfg.chars.includes(e.key)) && e.key in alternateChars;
+	const key = isAltername ? alternateChars[e.key] : e.key;
+	if(!cfg.chars.includes(key)) {
+		return;
+	}
+//console.log(isAltername ? alternateChars[e.key] : e.key, isAltername);
+	const div = document.querySelector('body > [data-key="' + key + '"]');
+	if(!div) {
+		return;
+	}
+//console.log(div);
+	const bullet = document.createElement('div');
+	bullet.className = 'shot';
+	bullet.style.left = div.dataset.left + '%';
+	document.body.appendChild(bullet);
+	setTimeout(function(e) {
+		e.bullet.classList.add('hit');
+		setTimeout(hit, 100, e);
+	}, 100, { div, bullet });
+}
+
+function hit(e) {
+	const rects = {
+		div: e.div.getClientRects(),
+		bullet: e.bullet.getClientRects()
+	};
+	if(!rects.div || !rects.bullet || !rects.div.length || !rects.bullet.length) {
+		return;
+	}
+	if(rects.bullet[0].y > rects.div[0].y + e.div.offsetHeight) {
+		setTimeout(hit, 100, e);
+		return;
+	}
+	e.div.classList.add('highlight');
+	e.bullet.remove();
+	setTimeout(function(div) {
+		div.classList.add('hidden');
+		setTimeout(function(div) {
+			div.remove();
+			fly();
+		}, 300, div);
+	}, 100, e.div);
+}
+
+function config() {
+	const form = document.createElement('form');
+	form.innerHTML = [
+		'<div>Characters: <input type="text" name="chars" value="' + cfg.chars.join('') + '"></div>',
+		'<div>Speed: <input type="number" name="speed" value="' + cfg.speed + '" min="1" max="15" step="1"></div>',
+		'<div>Simultaneous: <input type="number" name="minDivs" value="' + cfg.minDivs + '" min="1" max="10" step="1"></div>',
+		'<div><input type="submit" value="Start"></div>'
+	].join('');
+	form.addEventListener('submit', function(e) {
+		e.preventDefault();
+		init();
+	});
+	document.body.appendChild(form);
+}
+
+function init() {
+	document.querySelectorAll('body > form input').forEach(function(input) {
+		if(input.value.length) {
+			cfg[input.name] = input.value;
+		}
+	});
+	document.querySelector('body > form').remove();
+	add();
+	setTimeout(add, transitions.add * 1000);
+}
+
+		</script>
+	</head>
+</html>
