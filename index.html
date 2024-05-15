@@ -6,15 +6,15 @@
 		<meta name="author" content="//github.com/elderdub">
 		<meta name="description" content="Licensed under the GNU AGPL License 3.0 - //www.gnu.org/licenses/agpl.html">
 
-		<title>KT v0.01α</title>
+		<title>KT v0.1α</title>
 		<link rel="icon" href="./favicon.ico" type="image/x-icon">
 		<script>
 const cfg = {
 	speed: 4,
-	minDivs: 1,
+	minDivs: 2,
 	maxDivs: 10,
 	chars: 'ктгожщыйд'.split('')
-}
+};
 const transitions = {// seconds
 	topInitial: 20,
 	color: .15,
@@ -39,18 +39,17 @@ style.textContent = [
 		+ '; background-color: #111; color: silver; position: relative; overflow-y: hidden }',
 	'body > form { margin: 0; width: 100%; height: 100%'
 		+ '; display: flex; align-items: center; justify-content: center; flex-direction: column; row-gap: .5em }',
-	//'body > form { width: 100%; height: 100%; display: table-cell; text-align: center; vertical-align: center }',
 	'body > form > div { font-weight: normal }',
-	'input, button { font-size: 24pt; padding: .5em }',
-	'input { color: black; background-color: silver; border: black 1px solid; border-radius: .5em }',
+	'input { font: 400 24pt "Trebuchet MS", Tahoma, Generic; padding: .5em }',
+	'input[type="text"], input[type="number"] { color: black; background-color: silver; border: black 1px solid; border-radius: .5em }',
 	'body > div { position: absolute; top: -1em; height: 1em; background-color: #FFF2'
 		+ '; border-radius: .25em; padding: .25em; text-transform: capitalize; opacity: 1 }',
 	'body > div.fly { top: calc(100% - 1.5em) }',
-	'body > div.red { color: crimson; background-color: #F882; }',
-	'body > div.highlight { color: yellow !important }',
+	'body > div.red { color: crimson; background-color: #F882 }',
+	'body > div.highlight { color: gold !important; background-color: #FF82 !important }',
 	'body > div.hidden { opacity: 0 }',
 	'body > div:after { content: attr(data-key) }',
-	'body > div.shot { background-color: transparent; top: auto; bottom: -1em; transition: bottom 1.5s linear }',
+	'body > div.shot { background-color: transparent; top: auto; bottom: -1em; transition: bottom 1500ms linear }',
 	'body > div.shot.hit { bottom: 100% }',
 	'body > div.shot:after { content: \'|\' }'
 ].join('\n');
@@ -67,7 +66,7 @@ function add() {
 	if(!('divs' in window)) {
 		window.divs = cfg.minDivs - 1;
 	}
-	if(document.querySelectorAll('body > div').length < ++window.divs) {
+	if(document.querySelectorAll('body > div.char').length < ++window.divs) {
 		transitions.top = transitions.topInitial;
 		Array.from(Array(20)).fill(null).forEach(function(val, i) {
 			if(i >= cfg.speed - 1) {
@@ -75,7 +74,7 @@ function add() {
 			}
 			transitions.top -= 1;
 		});
-		while(document.querySelectorAll('body > div').length < window.divs) {
+		while(document.querySelectorAll('body > div.char').length < window.divs) {
 			fly();
 		}
 		if(window.divs < cfg.maxDivs) {
@@ -95,8 +94,9 @@ function fly() {
 
 //console.log(randoms.transitionTop, transitions.top);
 
-	const div = document.createElement('div');
 	const key = cfg.chars[Math.floor(Math.random() * cfg.chars.length)];
+	const div = document.createElement('div');
+	div.className = 'char';
 	div.dataset.key = key;
 	div.dataset.left = randoms.left;
 
@@ -122,18 +122,27 @@ function shot(e) {
 		return;
 	}
 //console.log(isAltername ? alternateChars[e.key] : e.key, isAltername);
-	const div = document.querySelector('body > [data-key="' + key + '"]');
-	if(!div) {
+	const divs = document.querySelectorAll('body > [data-key="' + key + '"]');
+	if(!divs.length) {
 		return;
 	}
+	const div = Object.values(divs).find(function(unshot) {
+		return !document.querySelector('body > div.shot[data-left="' + unshot.dataset.left + '"]');
+	}) || divs[0];
 //console.log(div);
 	const bullet = document.createElement('div');
 	bullet.className = 'shot';
+	bullet.dataset.left = div.dataset.left;
 	bullet.style.left = div.dataset.left + '%';
 	document.body.appendChild(bullet);
 	setTimeout(function(e) {
 		e.bullet.classList.add('hit');
 		setTimeout(hit, 100, e);
+		setTimeout(function(bullet) {
+			if(bullet) {
+				bullet.remove();
+			}
+		}, 1500, e.bullet);
 	}, 100, { div, bullet });
 }
 
@@ -147,6 +156,9 @@ function hit(e) {
 	}
 	if(rects.bullet[0].y > rects.div[0].y + e.div.offsetHeight) {
 		setTimeout(hit, 100, e);
+		return;
+	}
+	if(e.div.classList.contains('highlight') || e.div.classList.contains('hidden')) {
 		return;
 	}
 	e.div.classList.add('highlight');
